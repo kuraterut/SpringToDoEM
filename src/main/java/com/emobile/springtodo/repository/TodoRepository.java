@@ -82,6 +82,20 @@ public class TodoRepository {
         jdbcTemplate.update(sql, id);
     }
 
+    public void deleteAll() {
+        jdbcTemplate.update("DELETE FROM todos");
+    }
+
+    public int count(int limit, int offset) {
+        return findAll(limit, offset).size();
+    }
+
+    public List<Todo> findByCompleted(int limit, int offset) {
+        String sql = "SELECT * FROM todos WHERE todos.completed = TRUE " +
+                "ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        return jdbcTemplate.query(sql, new TodoRowMapper(), limit, offset);
+    }
+
     private static class TodoRowMapper implements RowMapper<Todo> {
         @Override
         public Todo mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -95,4 +109,6 @@ public class TodoRepository {
             return todo;
         }
     }
+
+
 }

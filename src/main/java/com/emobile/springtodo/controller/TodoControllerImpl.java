@@ -24,10 +24,7 @@ public class TodoControllerImpl implements TodoController {
     public List<TodoResponse> getAllTodos(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset) {
-        log.info("Controller: Start find All");
-        List<TodoResponse> todoResponses = todoService.findAll(limit, offset);
-        log.info("Controller: End find All");
-        return todoResponses;
+        return todoService.findAll(limit, offset);
     }
 
     @Override
