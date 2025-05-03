@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDateTime;
@@ -82,7 +81,7 @@ public class TodoRepositoryDataJpaTest {
     @Sql("/sql/insert-test-todo.sql")
     @DisplayName("deleteById() - Should delete todo")
     void deleteById_ShouldRemoveTodo() {
-        Long id = 1L;
+        Long id = 2L;
         assertThat(todoRepository.findById(id)).isPresent();
 
         todoRepository.deleteById(id);
