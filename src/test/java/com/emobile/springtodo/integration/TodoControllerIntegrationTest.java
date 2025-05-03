@@ -1,171 +1,225 @@
 package com.emobile.springtodo.integration;
 
-import com.emobile.springtodo.dto.request.TodoRequest;
-import com.emobile.springtodo.model.Todo;
-import com.emobile.springtodo.repository.TodoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.Customization;
+import org.skyscreamer.jsonassert.comparator.CustomComparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.GenericContainer;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
-import java.time.LocalDateTime;
-
-import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public class TodoControllerIntegrationTest {
-
-    private static final LocalDateTime testCreatedTime = LocalDateTime.of(2025, 4, 25, 5, 5);
-    private static final LocalDateTime testUpdatedTime = LocalDateTime.of(2025, 4, 25, 5, 5);
-
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public ObjectMapper objectMapper() {
-            return new ObjectMapper()
-                    .registerModule(new JavaTimeModule())
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        }
-    }
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass")
-            .withInitScript("sql/init-test-db.sql");
-
-    @Container
-    static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
-            .withExposedPorts(6379);
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private TodoRepository todoRepository;
+    private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
+            .withDatabaseName("testdb")
+            .withUsername("username")
+            .withPassword("password")
+            .withInitScript("sql/init-test-db.sql");
+
+    private final String TODO_REQUEST_JSON = """
+        {
+            "title": "Test Todo",
+            "description": "Test Description",
+            "completed": false
+        }
+        """;
+
+    private final String EXPECTED_TODO_RESPONSE = """
+        {
+            "title": "Test Todo",
+            "description": "Test Description",
+            "completed": false
+        }
+        """;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
-        registry.add("spring.liquibase.enabled", () -> "false");
     }
 
     @BeforeEach
-    void setUp(){
-        todoRepository.deleteAll();
+    void setUp() {
+        jdbcTemplate.update("TRUNCATE TABLE todos RESTART IDENTITY CASCADE");
     }
 
     @Test
-    @DisplayName("POST /api/todos - Create new TODO")
-    void createTodo_ShouldReturnCreatedTodo() throws Exception {
-        TodoRequest request = new TodoRequest("Test Todo", "Test Description", false);
-
+    @DisplayName("GET /api/todos - Return first 10 todos")
+    void getAllTodos_ShouldReturnTodoList() throws Exception {
         mockMvc.perform(post("/api/todos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", notNullValue()))
-                .andExpect(jsonPath("$.title", is("Test Todo")));
-    }
+                        .content(TODO_REQUEST_JSON))
+                .andExpect(status().isCreated());
 
-    @Test
-    @DisplayName("GET /api/todos - Get all TODOs")
-    void getAllTodos_ShouldReturnTodoList() throws Exception {
-        Todo todo = new Todo();
-        todo.setTitle("Test Todo");
-        todo.setDescription("Test Description");
-        todo.setCompleted(false);
-        todo.setCreatedAt(testCreatedTime);
-        todo.setUpdatedAt(testUpdatedTime);
-        todoRepository.save(todo);
-
-        mockMvc.perform(get("/api/todos")
+        MvcResult result = mockMvc.perform(get("/api/todos")
                         .param("limit", "10")
                         .param("offset", "0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title", is("Test Todo")));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        String expectedJson = "[" + EXPECTED_TODO_RESPONSE + "]";
+        System.out.println(result.getResponse().getContentAsString());
+        JSONAssert.assertEquals(expectedJson, result.getResponse().getContentAsString(),
+                JSONCompareMode.LENIENT);
     }
 
     @Test
-    @DisplayName("GET /api/todos/{id} - Get TODO by ID")
+    @DisplayName("GET /api/todos/{id} - Return todo by id")
     void getTodoById_ShouldReturnTodo() throws Exception {
-        Todo todo = new Todo();
-        todo.setTitle("Test Todo");
-        todo.setCompleted(false);
-        todo.setCreatedAt(testCreatedTime);
-        todo.setUpdatedAt(testUpdatedTime);
-        todo = todoRepository.save(todo);
-
-        mockMvc.perform(get("/api/todos/{id}", todo.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(todo.getId().intValue())))
-                .andExpect(jsonPath("$.title", is("Test Todo")));
-    }
-
-    @Test
-    @DisplayName("PUT /api/todos/{id} - Update TODO")
-    void updateTodo_ShouldReturnUpdatedTodo() throws Exception {
-        Todo todo = new Todo();
-        todo.setTitle("Old Title");
-        todo.setCompleted(true);
-        todo.setCreatedAt(testCreatedTime);
-        todo.setUpdatedAt(testUpdatedTime);
-        todo = todoRepository.save(todo);
-
-        TodoRequest updateRequest = new TodoRequest("Updated Todo", "Updated Description", true);
-
-        mockMvc.perform(put("/api/todos/{id}", todo.getId())
+        MvcResult createResult = mockMvc.perform(post("/api/todos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(TODO_REQUEST_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String createdTodoJson = createResult.getResponse().getContentAsString();
+        String id = new ObjectMapper().readTree(createdTodoJson).path("id").asText();
+
+        MvcResult result = mockMvc.perform(get("/api/todos/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title", is("Updated Todo")));
+                .andReturn();
+
+        JSONAssert.assertEquals(
+                EXPECTED_TODO_RESPONSE,
+                result.getResponse().getContentAsString(),
+                new CustomComparator(JSONCompareMode.LENIENT,
+                        new Customization("createdAt", (o1, o2) -> true),
+                        new Customization("updatedAt", (o1, o2) -> true)
+                )
+        );
     }
 
     @Test
-    @DisplayName("DELETE /api/todos/{id} - Delete TODO")
-    void deleteTodo_ShouldReturnNoContent() throws Exception {
-        Todo todo = new Todo();
-        todo.setTitle("To Delete");
-        todo.setCompleted(false);
-        todo.setCreatedAt(testCreatedTime);
-        todo.setUpdatedAt(testUpdatedTime);
-        todo = todoRepository.save(todo);
+    @DisplayName("POST /api/todos - Create new todo")
+    void createTodo_ShouldReturnCreatedTodo() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(TODO_REQUEST_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        mockMvc.perform(delete("/api/todos/{id}", todo.getId()))
+        JSONAssert.assertEquals(EXPECTED_TODO_RESPONSE,
+                result.getResponse().getContentAsString(),
+                JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    @DisplayName("PUT /api/todos/{id} - Update todo")
+    void updateTodo_ShouldReturnUpdatedTodo() throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(TODO_REQUEST_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String id = new ObjectMapper()
+                .readTree(createResult.getResponse().getContentAsString())
+                .path("id").asText();
+
+        String updatedRequestJson = """
+        {
+            "title": "Updated Todo",
+            "description": "Updated Description",
+            "completed": true
+        }
+        """;
+
+        MvcResult result = mockMvc.perform(put("/api/todos/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updatedRequestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String expectedUpdatedResponse = """
+        {
+            "id": %s,
+            "title": "Updated Todo",
+            "description": "Updated Description",
+            "completed": true
+        }
+        """.formatted(id);
+
+        JSONAssert.assertEquals(expectedUpdatedResponse,
+                result.getResponse().getContentAsString(),
+                JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    @DisplayName("DELETE /api/todos/{id} - Delete todo")
+    void deleteTodo_ShouldReturnNoContent() throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(TODO_REQUEST_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String id = new ObjectMapper()
+                .readTree(createResult.getResponse().getContentAsString())
+                .path("id").asText();
+
+        mockMvc.perform(delete("/api/todos/{id}", id))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/todos/{id}", todo.getId()))
+        mockMvc.perform(get("/api/todos/{id}", id))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/todos - Return error 400 for invalid input")
+    void createTodo_ShouldReturnBadRequestForInvalidInput() throws Exception {
+        String invalidTodoJson = """
+        {
+            "title": "",
+            "description": "Test Description",
+            "completed": false
+        }
+        """;
+
+        MvcResult result = mockMvc.perform(post("/api/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidTodoJson))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        String expectedErrorJson = """
+        {
+            "status": 400,
+            "errors": ["title: must not be blank"]
+        }
+        """;
+
+        JSONAssert.assertEquals(expectedErrorJson,
+                result.getResponse().getContentAsString(),
+                JSONCompareMode.LENIENT);
     }
 }
