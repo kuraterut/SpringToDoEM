@@ -36,12 +36,14 @@ test:
   stage: test
   image: maven:3.9-eclipse-temurin-21
   services:
-    - docker:24.0-dind
+    - name: docker:dind
+      alias: docker
   variables:
+    DOCKER_HOST: tcp://docker:2375
     TESTCONTAINERS_RYUK_DISABLED: "true"
-    TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "/var/run/docker.sock"
+    TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "ghcr.io/testcontainers/"
   script:
-    - mvn test
+    - mvn test -Dspring.profiles.active=test -Dtestcontainers.reuse.enable=true
   only:
     - merge_requests
     - dev

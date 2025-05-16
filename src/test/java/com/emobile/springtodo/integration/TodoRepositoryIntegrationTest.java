@@ -21,6 +21,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,8 @@ class TodoRepositoryIntegrationTest {
 
     @Container
     static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
-            .withExposedPorts(6379);
+            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2))
+            .withReuse(true);
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
