@@ -21,6 +21,9 @@ build:
   only:
     - merge_requests
     - dev
+  tags:
+    - docker
+    - java
 
 unit-test:
   stage: test
@@ -30,3 +33,6 @@ unit-test:
   only:
     - merge_requests
     - dev
+  tags:
+    - docker
+    - java
