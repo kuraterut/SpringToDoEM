@@ -12,7 +12,7 @@ cache:
 
 build:
   stage: build
-  image: maven:3.8.6-jdk-17
+  image: eclipse-temurin:21-jdk-jammy
   script:
     - mvn clean package -DskipTests
   artifacts:
@@ -27,7 +27,7 @@ build:
 
 unit-test:
   stage: test
-  image: maven:3.8.6-jdk-17
+  image: eclipse-temurin:21-jdk-jammy
   script:
     - mvn test
   only:
