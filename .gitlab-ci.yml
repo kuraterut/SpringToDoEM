@@ -8,23 +8,27 @@ variables:
 cache:
   paths:
     - .m2/repository/
-    - target/
+    - */target/
 
 build:
   stage: build
-  image: maven:3.8.6-openjdk-17
+  tags:
+    - docker
+    - java
   script:
     - mvn clean package -DskipTests
   artifacts:
     paths:
-      - target/*.jar
+      - */target/*.jar
   only:
     - merge_requests
     - dev
 
 unit-test:
   stage: test
-  image: maven:3.8.6-openjdk-17
+  tags:
+    - docker
+    - java
   script:
     - mvn test
   only:
