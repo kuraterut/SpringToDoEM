@@ -1,5 +1,6 @@
 package com.emobile.springtodo.integration;
 
+import com.emobile.springtodo.repository.TodoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,8 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,6 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@Import(TodoRepository.class)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 //@ActiveProfiles("test")
 public class TodoControllerIntegrationTest {
 
@@ -42,15 +47,12 @@ public class TodoControllerIntegrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-//            .withDatabaseName("testdb")
-//            .withUsername("username")
-//            .withPassword("password")
             .withInitScript("sql/init-test-db.sql");
 
     @Container
     static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
-            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2))
-            .withReuse(true);
+            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2));
+//            .withReuse(true);
 
     private final String TODO_REQUEST_JSON = """
         {
@@ -74,7 +76,7 @@ public class TodoControllerIntegrationTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", () -> redis.getFirstMappedPort());
+        registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
     }
 
     @BeforeEach
