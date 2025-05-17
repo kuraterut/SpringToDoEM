@@ -67,6 +67,8 @@ test:
   stage: test
   image: docker:24.0
   before_script:
+    - unset DOCKER_HOST
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - apk add --no-cache curl bash openjdk21 maven git
     - docker-compose -f docker-compose.test.yml up -d
     - echo "Check" && docker ps
