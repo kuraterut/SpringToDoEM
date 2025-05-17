@@ -66,6 +66,7 @@ test:
       DOCKER_HOST: tcp://docker:2375
       DOCKER_TLS_CERTDIR: ""
   script:
+    - export DOCKER_HOST=tcp://localhost:2375
     - apk add --no-cache postgresql-client redis openjdk17 maven
 
     - docker run -d --name postgres 
