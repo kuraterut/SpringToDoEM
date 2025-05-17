@@ -63,7 +63,7 @@ public class TodoRepositoryDataJpaTest {
     @Sql("/sql/insert-test-todo.sql")
     @DisplayName("findById() - Should return todo when exists")
     void findById_ShouldReturnTodoWhenExists() {
-        Optional<Todo> foundTodo = todoRepository.findById(1L);
+        Optional<Todo> foundTodo = todoRepository.findById(2L);
 
         assertThat(foundTodo).isPresent();
         assertThat(foundTodo.get().getTitle()).isEqualTo("Test Todo");

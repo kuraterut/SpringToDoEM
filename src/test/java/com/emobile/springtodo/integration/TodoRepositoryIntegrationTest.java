@@ -42,7 +42,8 @@ class TodoRepositoryIntegrationTest {
     }
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
+            .withInitScript("sql/init-test-db.sql");
 
     @Container
     static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
