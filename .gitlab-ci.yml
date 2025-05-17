@@ -5,10 +5,10 @@ stages:
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   POSTGRES_DB: testdb
-  POSTGRES_USER: testuser
-  POSTGRES_PASSWORD: testpass
-  SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
-  SPRING_REDIS_HOST: redis
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  SPRING_DATASOURCE_URL: jdbc:postgresql://todo-postgres:5432/${POSTGRES_DB}
+  SPRING_REDIS_HOST: todo-redis
   SPRING_PROFILES_ACTIVE: test
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
@@ -39,29 +39,6 @@ build:
     - docker
     - java
 
-#test:
-#  stage: test
-#  image: maven:3.9-eclipse-temurin-21
-#  services:
-#    - name: docker:dind
-#      alias: docker
-#    - name: redis:7-alpine
-#      alias: redis
-#  variables:
-#    DOCKER_HOST: tcp://docker:2375
-#    TESTCONTAINERS_RYUK_DISABLED: "true"
-#    TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "docker.io/"
-#    SPRING_REDIS_HOST: redis
-#    SPRING_PROFILES_ACTIVE: test
-#  script:
-#    - mvn test -Dspring.profiles.active=test -Dtestcontainers.reuse.enable=true
-#  only:
-#    - merge_requests
-#    - dev
-#  tags:
-#    - docker
-#    - java
-
 
 test:
   stage: test
@@ -81,7 +58,13 @@ test:
     - unset DOCKER_HOST
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - docker compose -f docker-compose.test.yml up -d
-    - mvn test
+    - docker run --rm --network container:todo-postgres 
+      -e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL 
+      -e SPRING_REDIS_HOST=$SPRING_REDIS_HOST 
+      -e POSTGRES_USER=$POSTGRES_USER 
+      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD 
+      maven:3.9-eclipse-temurin-21 
+      mvn test
   after_script:
     - unset DOCKER_HOST
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
