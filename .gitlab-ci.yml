@@ -58,13 +58,13 @@ test:
     - unset DOCKER_HOST
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - docker compose -f docker-compose.test.yml up -d
-    - docker run --rm --network container:todo-postgres 
-      -e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL 
-      -e SPRING_REDIS_HOST=$SPRING_REDIS_HOST 
-      -e POSTGRES_USER=$POSTGRES_USER 
-      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD 
-      maven:3.9-eclipse-temurin-21 
-      mvn test
+#    - docker run --rm --network container:todo-postgres
+#      -e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL
+#      -e SPRING_REDIS_HOST=$SPRING_REDIS_HOST
+#      -e POSTGRES_USER=$POSTGRES_USER
+#      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+#      maven:3.9-eclipse-temurin-21
+    - mvn test -Dspring.profiles.active=test
   after_script:
     - unset DOCKER_HOST
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
