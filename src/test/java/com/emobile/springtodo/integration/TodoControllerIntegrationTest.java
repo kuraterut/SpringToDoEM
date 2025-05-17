@@ -16,11 +16,14 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+
+import java.time.Duration;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,6 +47,11 @@ public class TodoControllerIntegrationTest {
             .withPassword("password")
             .withInitScript("sql/init-test-db.sql");
 
+    @Container
+    static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
+            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2))
+            .withReuse(true);
+
     private final String TODO_REQUEST_JSON = """
         {
             "title": "Test Todo",
@@ -65,6 +73,8 @@ public class TodoControllerIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.redis.host", redis::getHost);
+        registry.add("spring.redis.port", () -> redis.getMappedPort(6379));
     }
 
     @BeforeEach
