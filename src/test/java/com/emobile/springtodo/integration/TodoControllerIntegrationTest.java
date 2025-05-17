@@ -47,10 +47,10 @@ public class TodoControllerIntegrationTest {
             .withPassword("password")
             .withInitScript("sql/init-test-db.sql");
 
-//    @Container
-//    static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
-//            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2))
-//            .withReuse(true);
+    @Container
+    static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
+            .withExposedPorts(6379).withStartupTimeout(Duration.ofMinutes(2))
+            .withReuse(true);
 
     private final String TODO_REQUEST_JSON = """
         {
@@ -73,8 +73,8 @@ public class TodoControllerIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-//        registry.add("spring.redis.host", redis::getHost);
-//        registry.add("spring.redis.port", () -> redis.getFirstMappedPort());
+        registry.add("spring.redis.host", redis::getHost);
+        registry.add("spring.redis.port", () -> redis.getFirstMappedPort());
     }
 
     @BeforeEach
