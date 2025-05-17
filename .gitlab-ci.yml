@@ -9,8 +9,8 @@ variables:
   POSTGRES_DB: testdb
   POSTGRES_USER: testuser
   POSTGRES_PASSWORD: testpass
-  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/${POSTGRES_DB}
-  SPRING_REDIS_HOST: redis
+  SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5433/${POSTGRES_DB}
+  SPRING_REDIS_HOST: localhost
   SPRING_PROFILES_ACTIVE: test
 
 
@@ -78,12 +78,12 @@ test:
 
     - docker run -d --name redis -p 6379:6379 redis:7-alpine
 
-    - timeout 60 sh -c 'until pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB; do sleep 1; done'
+    - timeout 60 sh -c 'until pg_isready -h localhost -p 5433 -U $POSTGRES_USER -d $POSTGRES_DB; do sleep 1; done'
     - timeout 60 sh -c 'until redis-cli -h localhost ping | grep -q "PONG"; do sleep 1; done'
 
     - mvn test
-    - docker stop postgres redis
-    - docker rm postgres redis
+    - docker stop postgres redis || true
+    - docker rm postgres redis || true
   only:
     - merge_requests
     - dev
