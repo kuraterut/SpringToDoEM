@@ -20,7 +20,7 @@ shutdown_timeout = 0
     [runners.cache.azure]
   [runners.docker]
     tls_verify = false
-    image = "maven:3.8.6-openjdk-17"
+    image = "maven:3.9-eclipse-temurin-21"
     privileged = true
     disable_entrypoint_overwrite = false
     oom_kill_disable = false
