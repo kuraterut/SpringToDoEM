@@ -20,11 +20,12 @@ shutdown_timeout = 0
     [runners.cache.azure]
   [runners.docker]
     tls_verify = false
-    image = "maven:3.9-eclipse-temurin-21"
+    image = "docker:24.0"
     privileged = true
     disable_entrypoint_overwrite = false
     oom_kill_disable = false
     disable_cache = false
-    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
+#    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
+    volumes = ["/cache"]
     shm_size = 512
     network_mtu = 0
