@@ -21,6 +21,10 @@ test:
   stage: test
   script:
     - mvn test
+  tags:
+    - docker
+    - java
+
 
 build:
   stage: build
@@ -29,6 +33,9 @@ build:
   artifacts:
     paths:
       - target/*.jar
+  tags:
+    - docker
+    - java
 
 after_script:
   - docker-compose down -v
