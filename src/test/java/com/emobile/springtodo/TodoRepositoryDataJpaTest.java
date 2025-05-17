@@ -16,10 +16,14 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.AFTER_TEST_METHOD;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TodoRepository.class)
+@Sql(scripts = "/sql/init-test-db.sql", executionPhase = BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/cleanup-data.sql", executionPhase = AFTER_TEST_METHOD)
 public class TodoRepositoryDataJpaTest {
 
     @Autowired
@@ -41,7 +45,6 @@ public class TodoRepositoryDataJpaTest {
     @Test
     @DisplayName("save() - Should save and return todo with generated ID")
     void save_ShouldPersistTodo() {
-        todoRepository.deleteAll();
         Todo savedTodo = todoRepository.save(testTodo);
 
         assertThat(savedTodo.getId()).isNotNull();
