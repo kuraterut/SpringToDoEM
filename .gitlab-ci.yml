@@ -7,7 +7,7 @@ variables:
   POSTGRES_DB: testdb
   POSTGRES_USER: testuser
   POSTGRES_PASSWORD: testpass
-  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-todo:5432/${POSTGRES_DB}
+  SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
   SPRING_REDIS_HOST: redis
   SPRING_PROFILES_ACTIVE: test
   DOCKER_HOST: tcp://docker:2375
