@@ -71,22 +71,24 @@ test:
     - unset DOCKER_HOST
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - docker network create test-network
-    - docker run -d --name postgres-todo --network test-network \
-      -e POSTGRES_DB=$POSTGRES_DB \
-      -e POSTGRES_USER=$POSTGRES_USER \
-      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+    - docker run -d --name postgres-todo --network test-network 
+      -e POSTGRES_DB=$POSTGRES_DB 
+      -e POSTGRES_USER=$POSTGRES_USER 
+      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD 
       postgres:15-alpine
-    - docker run -d --name redis --network test-network \
+    - docker run -d --name redis --network test-network 
       redis:7-alpine
     - timeout 60 sh -c 'until pg_isready -h postgres-todo -U $POSTGRES_USER -d $POSTGRES_DB; do sleep 1; done'
     - timeout 60 sh -c 'until redis-cli -h redis ping | grep -q "PONG"; do sleep 1; done'
-    - docker run --rm --network test-network \
-      -v $(pwd):/app -w /app \
-      -e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL \
-      -e SPRING_REDIS_HOST=redis \
-      maven:3.9-eclipse-temurin-21 \
+    - docker run --rm --network test-network 
+      -v $(pwd):/app -w /app 
+      -e SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL 
+      -e SPRING_REDIS_HOST=redis 
+      maven:3.9-eclipse-temurin-21 
       mvn test
   after_script:
+    - unset DOCKER_HOST
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - docker stop postgres-todo redis || true
     - docker rm postgres-todo redis || true
     - docker network rm test-network || true
