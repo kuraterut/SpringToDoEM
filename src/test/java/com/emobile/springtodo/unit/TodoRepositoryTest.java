@@ -94,4 +94,20 @@ class TodoRepositoryTest {
                 .update(contains("UPDATE todos SET"), any(), any(), any(), any(), any());
     }
 
+    @Test
+    @DisplayName("existsById - should return true when todo exists")
+    void existsById_ShouldReturnTrueWhenExists() {
+        Long existingId = 1L;
+
+        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(existingId)))
+                .thenReturn(testTodo);
+
+        boolean result = todoRepository.existsById(existingId);
+
+        assertTrue(result);
+        verify(jdbcTemplate, times(1))
+                .queryForObject(contains("SELECT * FROM todos WHERE id = ?"),
+                        any(TodoRepository.TodoRowMapper.class), eq(existingId));
+    }
+
 }

@@ -77,7 +77,7 @@ public class TodoRepository {
     }
 
 
-    private static class TodoRowMapper implements RowMapper<Todo> {
+    public static class TodoRowMapper implements RowMapper<Todo> {
         @Override
         public Todo mapRow(ResultSet rs, int rowNum) throws SQLException {
             Todo todo = new Todo();
