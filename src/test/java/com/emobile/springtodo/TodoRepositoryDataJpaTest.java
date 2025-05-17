@@ -22,8 +22,7 @@ import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TE
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TodoRepository.class)
-@Sql(scripts = "/sql/init-test-db.sql", executionPhase = BEFORE_TEST_METHOD)
-@Sql(scripts = "/sql/cleanup-data.sql", executionPhase = AFTER_TEST_METHOD)
+//@Sql(scripts = "/sql/cleanup-data.sql", executionPhase = AFTER_TEST_METHOD)
 public class TodoRepositoryDataJpaTest {
 
     @Autowired
@@ -43,6 +42,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @DisplayName("save() - Should save and return todo with generated ID")
     void save_ShouldPersistTodo() {
         Todo savedTodo = todoRepository.save(testTodo);
@@ -53,6 +53,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @Sql("/sql/insert-test-todos.sql")
     @DisplayName("findAll() - Should return paginated todos")
     void findAll_ShouldReturnPaginatedTodos() {
@@ -63,6 +64,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @Sql("/sql/insert-test-todo.sql")
     @DisplayName("findById() - Should return todo when exists")
     void findById_ShouldReturnTodoWhenExists() {
@@ -73,6 +75,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @DisplayName("findById() - Should return empty when not found")
     void findById_ShouldReturnEmptyWhenNotFound() {
         Optional<Todo> foundTodo = todoRepository.findById(999L);
@@ -81,6 +84,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @Sql("/sql/insert-test-todo.sql")
     @DisplayName("deleteById() - Should delete todo")
     void deleteById_ShouldRemoveTodo() {
@@ -93,6 +97,7 @@ public class TodoRepositoryDataJpaTest {
     }
 
     @Test
+    @Sql("/sql/init-test-db.sql")
     @Sql("/sql/insert-test-todos.sql")
     @DisplayName("findByCompleted() - Should return only completed todos")
     void findByCompleted_ShouldFindCompleted() {
