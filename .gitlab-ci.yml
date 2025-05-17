@@ -73,14 +73,14 @@ test:
 
     - docker-compose -f docker-compose.test.yml up -d
 
-    - docker run -d --name postgres 
-      -e POSTGRES_DB=$POSTGRES_DB 
-      -e POSTGRES_USER=$POSTGRES_USER 
-      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD 
-      -p 5433:5432 
-      postgres:15-alpine
-
-    - docker run -d --name redis -p 6379:6379 redis:7-alpine
+#    - docker run -d --name postgres
+#      -e POSTGRES_DB=$POSTGRES_DB
+#      -e POSTGRES_USER=$POSTGRES_USER
+#      -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+#      -p 5432:5432
+#      postgres:15-alpine
+#
+#    - docker run -d --name redis -p 6379:6379 redis:7-alpine
 
     - timeout 60 sh -c 'until pg_isready -h localhost -p 5433 -U $POSTGRES_USER -d $POSTGRES_DB; do sleep 1; done'
     - timeout 60 sh -c 'until redis-cli -h localhost ping | grep -q "PONG"; do sleep 1; done'
