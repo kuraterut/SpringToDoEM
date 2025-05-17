@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+//@ActiveProfiles("test")
 public class TodoControllerIntegrationTest {
 
     @Autowired
@@ -42,9 +42,9 @@ public class TodoControllerIntegrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("testdb")
-            .withUsername("username")
-            .withPassword("password")
+//            .withDatabaseName("testdb")
+//            .withUsername("username")
+//            .withPassword("password")
             .withInitScript("sql/init-test-db.sql");
 
     @Container
