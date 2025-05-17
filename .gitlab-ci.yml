@@ -10,6 +10,9 @@ variables:
   SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5433/${POSTGRES_DB}
   SPRING_REDIS_HOST: localhost
   SPRING_PROFILES_ACTIVE: test
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
 
 
 cache:
