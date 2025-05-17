@@ -7,6 +7,12 @@ variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
+  POSTGRES_DB: testdb
+  POSTGRES_USER: testuser
+  POSTGRES_PASSWORD: testpass
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/${POSTGRES_DB}
+  SPRING_REDIS_HOST: redis
+  SPRING_PROFILES_ACTIVE: test
 
 services:
   - name: docker:dind
@@ -32,22 +38,49 @@ build:
     - docker
     - java
 
+#test:
+#  stage: test
+#  image: maven:3.9-eclipse-temurin-21
+#  services:
+#    - name: docker:dind
+#      alias: docker
+#    - name: redis:7-alpine
+#      alias: redis
+#  variables:
+#    DOCKER_HOST: tcp://docker:2375
+#    TESTCONTAINERS_RYUK_DISABLED: "true"
+#    TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "docker.io/"
+#    SPRING_REDIS_HOST: redis
+#    SPRING_PROFILES_ACTIVE: test
+#  script:
+#    - mvn test -Dspring.profiles.active=test -Dtestcontainers.reuse.enable=true
+#  only:
+#    - merge_requests
+#    - dev
+#  tags:
+#    - docker
+#    - java
+
+
 test:
   stage: test
-  image: maven:3.9-eclipse-temurin-21
+  image: docker:24.0
   services:
-    - name: docker:dind
-      alias: docker
-    - name: redis:7-alpine
-      alias: redis
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    TESTCONTAINERS_RYUK_DISABLED: "true"
-    TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "docker.io/"
-    SPRING_REDIS_HOST: redis
-    SPRING_PROFILES_ACTIVE: test
+    - docker:24.0-dind
+  before_script:
+    - apk add --no-cache docker-compose
+    - docker-compose -f docker-compose.ci.yml up -d
+    - |
+      apk add --no-cache postgresql-client redis
+      echo "Waiting for PostgreSQL..."
+      while ! pg_isready -h postgres -U $POSTGRES_USER -d $POSTGRES_DB; do sleep 1; done
+      echo "Waiting for Redis..."
+      while ! redis-cli -h redis ping | grep -q "PONG"; do sleep 1; done
   script:
-    - mvn test -Dspring.profiles.active=test -Dtestcontainers.reuse.enable=true
+    - apk add --no-cache openjdk17 maven
+    - mvn test
+  after_script:
+    - docker-compose -f docker-compose.ci.yml down
   only:
     - merge_requests
     - dev

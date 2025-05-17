@@ -26,5 +26,5 @@ shutdown_timeout = 0
     oom_kill_disable = false
     disable_cache = false
     volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
-    shm_size = "512m"
+    shm_size = 512
     network_mtu = 0
