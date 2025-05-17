@@ -67,12 +67,12 @@ test:
       alias: docker
   variables:
       DOCKER_HOST: tcp://docker:2375
-      DOCKER_TLS_CERTDIR: ""
   script:
-    - export DOCKER_HOST=tcp://localhost:2375
+    - export DOCKER_HOST=tcp://localhost:2376
     - apk add --no-cache docker-compose postgresql-client redis openjdk17 maven
+    - docker info
 
-    - docker compose -f docker-compose.test.yml up -d
+    - docker-compose -f docker-compose.test.yml up -d
 
     - docker run -d --name postgres 
       -e POSTGRES_DB=$POSTGRES_DB 
