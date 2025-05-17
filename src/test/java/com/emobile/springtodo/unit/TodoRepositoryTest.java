@@ -14,7 +14,6 @@ import org.mockito.quality.Strictness;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class TodoRepositoryTest {
+class TodoRepositoryTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -81,4 +80,18 @@ public class TodoRepositoryTest {
         verify(jdbcTemplate, times(1))
                 .queryForObject(contains("INSERT INTO todos"), eq(Long.class), any(), any(), any(), any(), any());
     }
+
+    @Test
+    @DisplayName("save - Should update todo")
+    void save_ShouldUpdateTodo() {
+        testTodo.setId(1L);
+        when(jdbcTemplate.update(anyString(), eq(Long.class), any(), any(), any(), any(), any())).thenReturn(1);
+
+        Todo result = todoRepository.save(testTodo);
+
+        assertEquals(1L, result.getId());
+        verify(jdbcTemplate, times(1))
+                .update(contains("UPDATE todos SET"), any(), any(), any(), any(), any());
+    }
+
 }

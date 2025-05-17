@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = TodoControllerImpl.class)
-public class TodoControllerWebMvcTest {
+class TodoControllerWebMvcTest {
 
     @Autowired
     private MockMvc mockMvc;

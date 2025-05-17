@@ -4,7 +4,6 @@ import com.emobile.springtodo.model.Todo;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
@@ -17,11 +16,9 @@ import java.util.Optional;
 public class TodoRepository {
 
     private final JdbcTemplate jdbcTemplate;
-    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public TodoRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
     public List<Todo> findAll(int limit, int offset) {
@@ -39,10 +36,7 @@ public class TodoRepository {
     }
 
     public boolean existsById(Long id) {
-        if(findById(id).isPresent()) {
-            return true;
-        }
-        return false;
+        return findById(id).isPresent();
     }
 
     public Todo save(Todo todo) {
@@ -82,19 +76,6 @@ public class TodoRepository {
         jdbcTemplate.update(sql, id);
     }
 
-    public void deleteAll() {
-        jdbcTemplate.update("DELETE FROM todos");
-    }
-
-    public int count(int limit, int offset) {
-        return findAll(limit, offset).size();
-    }
-
-    public List<Todo> findByCompleted(int limit, int offset) {
-        String sql = "SELECT * FROM todos WHERE todos.completed = TRUE " +
-                "ORDER BY created_at DESC LIMIT ? OFFSET ?";
-        return jdbcTemplate.query(sql, new TodoRowMapper(), limit, offset);
-    }
 
     private static class TodoRowMapper implements RowMapper<Todo> {
         @Override

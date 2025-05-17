@@ -1,6 +1,5 @@
 package com.emobile.springtodo.unit;
 
-import com.emobile.springtodo.controller.TodoController;
 import com.emobile.springtodo.controller.TodoControllerImpl;
 import com.emobile.springtodo.dto.response.TodoResponse;
 import com.emobile.springtodo.service.TodoService;
@@ -18,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TodoControllerTest {
+class TodoControllerTest {
 
     @Mock
     private TodoService todoService;

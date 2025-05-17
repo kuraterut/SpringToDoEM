@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TodoServiceTest {
+class TodoServiceTest {
 
     @Mock
     private TodoRepository todoRepository;
@@ -84,5 +84,31 @@ public class TodoServiceTest {
 
         assertEquals("Test Todo", result.title());
         verify(todoRepository, times(1)).save(testTodo);
+    }
+
+    @Test
+    @DisplayName("update - Should update and return existing todo")
+    void update_ShouldSaveAndReturnExistingTodo() {
+        when(todoRepository.findById(1L)).thenReturn(Optional.of(testTodo));
+        when(todoRepository.save(testTodo)).thenReturn(testTodo);
+        when(todoMapper.toResponse(testTodo)).thenReturn(testResponse);
+
+        var result = todoService.update(1L, testRequest);
+
+        assertEquals("Test Todo", result.title());
+        verify(todoRepository, times(1)).save(testTodo);
+    }
+
+    @Test
+    @DisplayName("delete - should delete existing todo")
+    void delete_ShouldDeleteWhenTodoExists() {
+        Long todoId = 1L;
+        when(todoRepository.existsById(todoId)).thenReturn(true);
+        doNothing().when(todoRepository).deleteById(todoId);
+
+        todoService.delete(todoId);
+
+        verify(todoRepository, times(1)).existsById(todoId);
+        verify(todoRepository, times(1)).deleteById(todoId);
     }
 }
