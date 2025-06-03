@@ -1,11 +1,12 @@
 package com.emobile.springtodo.integration;
 
-
 import com.emobile.springtodo.model.Todo;
 import com.emobile.springtodo.repository.TodoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -51,7 +51,7 @@ class TodoRepositoryIntegrationTest {
             .withReuse(true);
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private SessionFactory sessionFactory;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -67,18 +67,23 @@ class TodoRepositoryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.update("DELETE FROM todos");
+        try (Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+            session.createMutationQuery("DELETE FROM Todo").executeUpdate();
+            session.getTransaction().commit();
+        }
     }
 
     @Test
     @DisplayName("save() - Should save and return todo with generated ID")
     void save_ShouldReturnTodoWithGeneratedId() {
-        Todo todo = new Todo();
-        todo.setTitle("Test Todo");
-        todo.setDescription("Test Description");
-        todo.setCompleted(false);
-        todo.setCreatedAt(LocalDateTime.now());
-        todo.setUpdatedAt(LocalDateTime.now());
+        Todo todo = Todo.builder()
+                .title("Test Todo")
+                .description("Test Description")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
 
         Todo savedTodo = todoRepository.save(todo);
 
@@ -89,11 +94,34 @@ class TodoRepositoryIntegrationTest {
     @Test
     @DisplayName("findAll() - Should return paginated todos")
     void findAll_ShouldReturnPaginatedTodos() {
-        jdbcTemplate.update("INSERT INTO todos (title, description, completed, created_at, updated_at) VALUES " +
-                        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)",
-                "Todo 1", "Desc 1", false, LocalDateTime.now(), LocalDateTime.now(),
-                "Todo 2", "Desc 2", true, LocalDateTime.now(), LocalDateTime.now(),
-                "Todo 3", "Desc 3", false, LocalDateTime.now(), LocalDateTime.now());
+        // Создаем тестовые данные
+        Todo todo1 = Todo.builder()
+                .title("Todo 1")
+                .description("Desc 1")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Todo todo2 = Todo.builder()
+                .title("Todo 2")
+                .description("Desc 2")
+                .completed(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Todo todo3 = Todo.builder()
+                .title("Todo 3")
+                .description("Desc 3")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        todoRepository.save(todo1);
+        todoRepository.save(todo2);
+        todoRepository.save(todo3);
 
         List<Todo> todos = todoRepository.findAll(2, 1);
 
@@ -104,13 +132,16 @@ class TodoRepositoryIntegrationTest {
     @Test
     @DisplayName("findById() - Should return todo when exists")
     void findById_ShouldReturnTodoWhenExists() {
-        Long id = jdbcTemplate.queryForObject(
-                "INSERT INTO todos (title, description, completed, created_at, updated_at) " +
-                        "VALUES (?, ?, ?, ?, ?) RETURNING id",
-                Long.class,
-                "Test Todo", "Test Desc", false, LocalDateTime.now(), LocalDateTime.now());
+        Todo todo = Todo.builder()
+                .title("Test Todo")
+                .description("Test Desc")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
 
-        Optional<Todo> foundTodo = todoRepository.findById(id);
+        Todo savedTodo = todoRepository.save(todo);
+        Optional<Todo> foundTodo = todoRepository.findById(savedTodo.getId());
 
         assertThat(foundTodo).isPresent();
         assertThat(foundTodo.get().getTitle()).isEqualTo("Test Todo");
@@ -119,15 +150,18 @@ class TodoRepositoryIntegrationTest {
     @Test
     @DisplayName("deleteById() - Should delete todo")
     void deleteById_ShouldDeleteTodo() {
-        Long id = jdbcTemplate.queryForObject(
-                "INSERT INTO todos (title, description, completed, created_at, updated_at) " +
-                        "VALUES (?, ?, ?, ?, ?) RETURNING id",
-                Long.class,
-                "Test Todo", "Test Desc", false, LocalDateTime.now(), LocalDateTime.now());
+        Todo todo = Todo.builder()
+                .title("Test Todo")
+                .description("Test Desc")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
 
-        todoRepository.deleteById(id);
+        Todo savedTodo = todoRepository.save(todo);
+        todoRepository.deleteById(savedTodo.getId());
 
-        Optional<Todo> deletedTodo = todoRepository.findById(id);
+        Optional<Todo> deletedTodo = todoRepository.findById(savedTodo.getId());
         assertThat(deletedTodo).isEmpty();
     }
 }

@@ -2,6 +2,10 @@ package com.emobile.springtodo.unit;
 
 import com.emobile.springtodo.model.Todo;
 import com.emobile.springtodo.repository.TodoRepository;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,8 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +28,16 @@ import static org.mockito.Mockito.*;
 class TodoRepositoryTest {
 
     @Mock
-    private JdbcTemplate jdbcTemplate;
+    private SessionFactory sessionFactory;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Transaction transaction;
+
+    @Mock
+    private Query<Todo> query;
 
     @InjectMocks
     private TodoRepository todoRepository;
@@ -35,29 +46,35 @@ class TodoRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        testTodo = new Todo();
-        testTodo.setId(1L);
-        testTodo.setTitle("Test Todo");
+        when(sessionFactory.openSession()).thenReturn(session);
+        when(session.beginTransaction()).thenReturn(transaction);
+
+        testTodo = Todo.builder()
+                .id(1L)
+                .title("Test Todo")
+                .build();
     }
 
     @Test
-    @DisplayName("findAll - Should execute correct SQL query")
+    @DisplayName("findAll - Should execute correct HQL query")
     void findAll_ShouldExecuteCorrectQuery() {
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(10), eq(0)))
-                .thenReturn(List.of(testTodo));
+        when(session.createQuery(anyString(), eq(Todo.class))).thenReturn(query);
+        when(query.setFirstResult(anyInt())).thenReturn(query);
+        when(query.setMaxResults(anyInt())).thenReturn(query);
+        when(query.list()).thenReturn(List.of(testTodo));
 
         List<Todo> result = todoRepository.findAll(10, 0);
 
         assertEquals(1, result.size());
-        verify(jdbcTemplate, times(1))
-                .query(contains("SELECT * FROM todos"), any(RowMapper.class), eq(10), eq(0));
+        verify(session).createQuery("FROM Todo ORDER BY createdAt DESC", Todo.class);
+        verify(query).setFirstResult(0);
+        verify(query).setMaxResults(10);
     }
 
     @Test
     @DisplayName("findById - Should return empty when not found")
     void findById_ShouldReturnEmptyWhenNotFound() {
-        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(1L)))
-                .thenReturn(null);
+        when(session.get(Todo.class, 1L)).thenReturn(null);
 
         Optional<Todo> result = todoRepository.findById(1L);
 
@@ -68,46 +85,34 @@ class TodoRepositoryTest {
     @DisplayName("save - Should insert new todo")
     void save_ShouldInsertNewTodo() {
         testTodo.setId(null);
-        when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(), any(), any(), any(), any()))
-                .thenReturn(1L);
-
-        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(1L)))
-                .thenReturn(testTodo);
 
         Todo result = todoRepository.save(testTodo);
 
-        assertEquals(1L, result.getId());
-        verify(jdbcTemplate, times(1))
-                .queryForObject(contains("INSERT INTO todos"), eq(Long.class), any(), any(), any(), any(), any());
+        verify(session).beginTransaction();
+        verify(session).persist(testTodo);
+        verify(transaction).commit();
     }
 
     @Test
     @DisplayName("save - Should update todo")
     void save_ShouldUpdateTodo() {
-        testTodo.setId(1L);
-        when(jdbcTemplate.update(anyString(), eq(Long.class), any(), any(), any(), any(), any())).thenReturn(1);
+        when(session.merge(testTodo)).thenReturn(testTodo);
 
         Todo result = todoRepository.save(testTodo);
 
         assertEquals(1L, result.getId());
-        verify(jdbcTemplate, times(1))
-                .update(contains("UPDATE todos SET"), any(), any(), any(), any(), any());
+        verify(session).beginTransaction();
+        verify(session).merge(testTodo);
+        verify(transaction).commit();
     }
 
     @Test
     @DisplayName("existsById - should return true when todo exists")
     void existsById_ShouldReturnTrueWhenExists() {
-        Long existingId = 1L;
+        when(session.get(Todo.class, 1L)).thenReturn(testTodo);
 
-        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(existingId)))
-                .thenReturn(testTodo);
-
-        boolean result = todoRepository.existsById(existingId);
+        boolean result = todoRepository.existsById(1L);
 
         assertTrue(result);
-        verify(jdbcTemplate, times(1))
-                .queryForObject(contains("SELECT * FROM todos WHERE id = ?"),
-                        any(TodoRepository.TodoRowMapper.class), eq(existingId));
     }
-
 }
