@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,7 +27,9 @@ public class TodoService {
 
     @Cacheable(value = "todos", key = "#limit + '-' + #offset")
     public List<TodoResponse> findAll(int limit, int offset) {
-        return todoRepository.findAll(limit, offset).stream()
+        int pageNumber = offset / limit;
+        List<Todo> todos = todoRepository.findAll(PageRequest.of(pageNumber, limit)).getContent();
+        return todos.stream()
                 .map(todoMapper::toResponse)
                 .toList();
     }

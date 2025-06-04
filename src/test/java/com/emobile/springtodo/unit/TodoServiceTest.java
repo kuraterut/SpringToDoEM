@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,14 +54,15 @@ class TodoServiceTest {
     @Test
     @DisplayName("findAll - Should return paginated todos")
     void findAll_ShouldReturnPaginatedTodos() {
-        when(todoRepository.findAll(10, 0)).thenReturn(List.of(testTodo));
+
+        when(todoRepository.findAll(PageRequest.of(0, 10))).thenReturn(new PageImpl<>(List.of(testTodo)));
         when(todoMapper.toResponse(any(Todo.class))).thenReturn(testResponse);
 
         var result = todoService.findAll(10, 0);
 
         assertEquals(1, result.size());
         assertEquals("Test Todo", result.get(0).title());
-        verify(todoRepository, times(1)).findAll(10, 0);
+        verify(todoRepository, times(1)).findAll(PageRequest.of(0, 10));
     }
 
     @Test
