@@ -2,9 +2,8 @@ pipeline {
   agent any
 
   triggers {
-    pullRequest(events: ['opened', 'synchronize'],
-               branches: ['dev'],
-               extensions: [[$class: 'LocalBranch', localBranch: '**']])
+          githubPush()
+
   }
 
   stages {
