@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TodoServiceTest {
+class TodoServiceTest {
 
     @Mock
     private TodoRepository todoRepository;
@@ -51,14 +54,15 @@ public class TodoServiceTest {
     @Test
     @DisplayName("findAll - Should return paginated todos")
     void findAll_ShouldReturnPaginatedTodos() {
-        when(todoRepository.findAll(10, 0)).thenReturn(List.of(testTodo));
+
+        when(todoRepository.findAll(PageRequest.of(0, 10))).thenReturn(new PageImpl<>(List.of(testTodo)));
         when(todoMapper.toResponse(any(Todo.class))).thenReturn(testResponse);
 
         var result = todoService.findAll(10, 0);
 
         assertEquals(1, result.size());
         assertEquals("Test Todo", result.get(0).title());
-        verify(todoRepository, times(1)).findAll(10, 0);
+        verify(todoRepository, times(1)).findAll(PageRequest.of(0, 10));
     }
 
     @Test
@@ -84,5 +88,31 @@ public class TodoServiceTest {
 
         assertEquals("Test Todo", result.title());
         verify(todoRepository, times(1)).save(testTodo);
+    }
+
+    @Test
+    @DisplayName("update - Should update and return existing todo")
+    void update_ShouldSaveAndReturnExistingTodo() {
+        when(todoRepository.findById(1L)).thenReturn(Optional.of(testTodo));
+        when(todoRepository.save(testTodo)).thenReturn(testTodo);
+        when(todoMapper.toResponse(testTodo)).thenReturn(testResponse);
+
+        var result = todoService.update(1L, testRequest);
+
+        assertEquals("Test Todo", result.title());
+        verify(todoRepository, times(1)).save(testTodo);
+    }
+
+    @Test
+    @DisplayName("delete - should delete existing todo")
+    void delete_ShouldDeleteWhenTodoExists() {
+        Long todoId = 1L;
+        when(todoRepository.existsById(todoId)).thenReturn(true);
+        doNothing().when(todoRepository).deleteById(todoId);
+
+        todoService.delete(todoId);
+
+        verify(todoRepository, times(1)).existsById(todoId);
+        verify(todoRepository, times(1)).deleteById(todoId);
     }
 }
