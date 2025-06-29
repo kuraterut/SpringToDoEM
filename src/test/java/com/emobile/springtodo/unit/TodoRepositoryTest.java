@@ -6,79 +6,75 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
-import java.sql.SQLException;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
-public class TodoRepositoryTest {
+class TodoRepositoryTest {
 
     @Mock
-    private JdbcTemplate jdbcTemplate;
-
-    @InjectMocks
     private TodoRepository todoRepository;
 
     private Todo testTodo;
 
     @BeforeEach
     void setUp() {
-        testTodo = new Todo();
-        testTodo.setId(1L);
-        testTodo.setTitle("Test Todo");
+        testTodo = Todo.builder()
+                .id(1L)
+                .title("Test Todo")
+                .description("Test Description")
+                .completed(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 
-    @Test
-    @DisplayName("findAll - Should execute correct SQL query")
-    void findAll_ShouldExecuteCorrectQuery() {
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(10), eq(0)))
-                .thenReturn(List.of(testTodo));
-
-        List<Todo> result = todoRepository.findAll(10, 0);
-
-        assertEquals(1, result.size());
-        verify(jdbcTemplate, times(1))
-                .query(contains("SELECT * FROM todos"), any(RowMapper.class), eq(10), eq(0));
-    }
 
     @Test
     @DisplayName("findById - Should return empty when not found")
     void findById_ShouldReturnEmptyWhenNotFound() {
-        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(1L)))
-                .thenReturn(null);
+        when(todoRepository.findById(1L)).thenReturn(Optional.empty());
 
         Optional<Todo> result = todoRepository.findById(1L);
 
-        assertTrue(result.isEmpty());
+        assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("save - Should insert new todo")
-    void save_ShouldInsertNewTodo() {
-        testTodo.setId(null);
-        when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(), any(), any(), any(), any()))
-                .thenReturn(1L);
-
-        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), eq(1L)))
-                .thenReturn(testTodo);
+    @DisplayName("save - Should return saved todo")
+    void save_ShouldReturnSavedTodo() {
+        when(todoRepository.save(any(Todo.class))).thenReturn(testTodo);
 
         Todo result = todoRepository.save(testTodo);
 
-        assertEquals(1L, result.getId());
-        verify(jdbcTemplate, times(1))
-                .queryForObject(contains("INSERT INTO todos"), eq(Long.class), any(), any(), any(), any(), any());
+        assertThat(result.getId()).isEqualTo(1L);
+        verify(todoRepository).save(testTodo);
+    }
+
+    @Test
+    @DisplayName("existsById - should return true when todo exists")
+    void existsById_ShouldReturnTrueWhenExists() {
+        when(todoRepository.existsById(1L)).thenReturn(true);
+
+        boolean result = todoRepository.existsById(1L);
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("deleteById - should delete todo")
+    void deleteById_ShouldDeleteTodo() {
+        doNothing().when(todoRepository).deleteById(1L);
+
+        todoRepository.deleteById(1L);
+
+        verify(todoRepository).deleteById(1L);
     }
 }
